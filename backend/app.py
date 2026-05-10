@@ -3,56 +3,101 @@ from flask_cors import CORS
 from groq import Groq
 import mysql.connector
 import pdfplumber
-import random
-import smtplib
-from email.mime.text import MIMEText
+import os
 
 app = Flask(__name__)
 CORS(app)
 
-client = Groq(api_key="YOUR_GROQ_API_KEY")
+client = Groq(api_key=os.environ.get("GROQ_API_KEY", "YOUR_GROQ_API_KEY"))
 
 
 def get_db_connection():
     return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="darshan123",
-        database="ai_career_platform"
+        host=os.environ.get("DB_HOST", "localhost"),
+        user=os.environ.get("DB_USER", "root"),
+        password=os.environ.get("DB_PASSWORD", "darshan123"),
+        database=os.environ.get("DB_NAME", "ai_career_platform"),
+        port=int(os.environ.get("DB_PORT", 3306))
     )
+
+
+def create_tables():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS students (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100),
+        register_number VARCHAR(50),
+        mobile VARCHAR(20),
+        email VARCHAR(100) UNIQUE,
+        password VARCHAR(100),
+        area VARCHAR(100),
+        city VARCHAR(100),
+        pincode VARCHAR(20)
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS progress (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        student_email VARCHAR(100),
+        learning INT DEFAULT 0,
+        resume INT DEFAULT 0,
+        interview INT DEFAULT 0,
+        roadmap INT DEFAULT 0
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS courses (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        subject VARCHAR(100),
+        type VARCHAR(50),
+        title VARCHAR(150),
+        content TEXT,
+        video_url TEXT
+    )
+    """)
+
+    conn.commit()
+    cursor.close()
+    conn.close()
 
 
 @app.route("/")
 def home():
-    return "✅ Backend Running Successfully"
+    create_tables()
+    return "✅ AI Career Platform Backend Running Successfully"
 
 
 @app.route("/register", methods=["POST"])
 def register():
+    create_tables()
     data = request.json
 
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        sql = """
-        INSERT INTO students
-        (name, register_number, mobile, email, password, area, city, pincode)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
-        """
-
-        values = (
-            data["name"],
-            data["registerNumber"],
-            data["mobile"],
-            data["email"],
-            data["password"],
-            data["area"],
-            data["city"],
-            data["pincode"]
+        cursor.execute(
+            """
+            INSERT INTO students
+            (name, register_number, mobile, email, password, area, city, pincode)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+            """,
+            (
+                data["name"],
+                data["registerNumber"],
+                data["mobile"],
+                data["email"],
+                data["password"],
+                data["area"],
+                data["city"],
+                data["pincode"]
+            )
         )
-
-        cursor.execute(sql, values)
 
         cursor.execute(
             """
@@ -64,22 +109,18 @@ def register():
         )
 
         conn.commit()
-
         cursor.close()
         conn.close()
 
-        return jsonify({
-            "message": "Account created successfully"
-        })
+        return jsonify({"message": "Account created successfully"})
 
     except Exception as e:
-        return jsonify({
-            "message": str(e)
-        }), 400
+        return jsonify({"message": str(e)}), 400
 
 
 @app.route("/login", methods=["POST"])
 def login():
+    create_tables()
     data = request.json
 
     conn = get_db_connection()
@@ -101,13 +142,12 @@ def login():
             "student": student
         })
 
-    return jsonify({
-        "message": "Invalid email or password"
-    }), 401
+    return jsonify({"message": "Invalid email or password"}), 401
 
 
 @app.route("/get-progress/<email>", methods=["GET"])
 def get_progress(email):
+    create_tables()
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -139,64 +179,44 @@ def get_progress(email):
 
 @app.route("/update-progress", methods=["POST"])
 def update_progress():
-
+    create_tables()
     data = request.json
 
     email = data["email"]
     field = data["field"]
     value = data["value"]
 
-    allowed_fields = [
-        "learning",
-        "resume",
-        "interview",
-        "roadmap"
-    ]
+    allowed_fields = ["learning", "resume", "interview", "roadmap"]
 
     if field not in allowed_fields:
-        return jsonify({
-            "message": "Invalid field"
-        }), 400
+        return jsonify({"message": "Invalid field"}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    sql = f"""
-    UPDATE progress
-    SET {field}=%s
-    WHERE student_email=%s
-    """
-
+    sql = f"UPDATE progress SET {field}=%s WHERE student_email=%s"
     cursor.execute(sql, (value, email))
 
     conn.commit()
-
     cursor.close()
     conn.close()
 
-    return jsonify({
-        "message": "Progress updated"
-    })
+    return jsonify({"message": "Progress updated successfully"})
 
 
 @app.route("/answer", methods=["POST"])
 def answer():
-
     data = request.json
     question = data.get("question", "")
 
     try:
-
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
-
             messages=[
                 {
                     "role": "system",
-                    "content":
-                    "You are an AI interview assistant. Give beginner friendly answers."
+                    "content": "You are a professional AI interview assistant. Give simple beginner-friendly answers."
                 },
-
                 {
                     "role": "user",
                     "content": question
@@ -205,30 +225,21 @@ def answer():
         )
 
         return jsonify({
-            "answer":
-            response.choices[0].message.content
+            "answer": response.choices[0].message.content
         })
 
     except Exception as e:
-
-        return jsonify({
-            "answer": str(e)
-        })
+        return jsonify({"answer": str(e)})
 
 
 @app.route("/analyze-resume", methods=["POST"])
 def analyze_resume():
-
     file = request.files["resume"]
-
     text = ""
 
     with pdfplumber.open(file) as pdf:
-
         for page in pdf.pages:
-
             page_text = page.extract_text()
-
             if page_text:
                 text += page_text
 
@@ -239,24 +250,21 @@ Give:
 1. ATS score
 2. Grammar mistakes
 3. Missing keywords
-4. Improvements
+4. Formatting mistakes
+5. Improvements
 
 Resume:
 {text}
 """
 
     try:
-
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
-
             messages=[
                 {
                     "role": "system",
-                    "content":
-                    "You are an ATS Resume Analyzer."
+                    "content": "You are an expert ATS resume analyzer."
                 },
-
                 {
                     "role": "user",
                     "content": prompt
@@ -268,34 +276,32 @@ Resume:
 
         return jsonify({
             "score": 90,
+            "missing_keywords": ["AI detected suggestions"],
             "grammar_issues": [ai_result],
-            "missing_keywords": ["AI suggestions available"],
-            "suggestion": "Improve resume using AI suggestions."
+            "suggestion": "Improve resume based on AI analysis."
         })
 
     except Exception as e:
-
         return jsonify({
             "score": 0,
-            "grammar_issues": [str(e)],
             "missing_keywords": ["Error"],
-            "suggestion": "Backend error"
+            "grammar_issues": [str(e)],
+            "suggestion": "Check backend or Groq API key."
         })
 
 
 @app.route("/admin/students", methods=["GET"])
 def admin_students():
+    create_tables()
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
     cursor.execute("""
-        SELECT s.name, s.email,
-               p.learning, p.resume,
-               p.interview, p.roadmap
+        SELECT s.name, s.email, s.register_number, s.mobile,
+               p.learning, p.resume, p.interview, p.roadmap
         FROM students s
-        LEFT JOIN progress p
-        ON s.email = p.student_email
+        LEFT JOIN progress p ON s.email = p.student_email
     """)
 
     students = cursor.fetchall()
@@ -306,23 +312,65 @@ def admin_students():
     return jsonify(students)
 
 
+@app.route("/admin/add-course", methods=["POST"])
+def add_course():
+    create_tables()
+    data = request.json
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        INSERT INTO courses
+        (subject, type, title, content, video_url)
+        VALUES (%s,%s,%s,%s,%s)
+        """,
+        (
+            data["subject"],
+            data["type"],
+            data["title"],
+            data["content"],
+            data["video_url"]
+        )
+    )
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return jsonify({"message": "Course content added successfully"})
+
+
+@app.route("/courses", methods=["GET"])
+def get_courses():
+    create_tables()
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT * FROM courses")
+    courses = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify(courses)
+
+
 @app.route("/leaderboard", methods=["GET"])
 def leaderboard():
+    create_tables()
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
     cursor.execute("""
         SELECT s.name, s.email,
-        ROUND(
-        (p.learning + p.resume +
-         p.interview + p.roadmap)/4
-        ) AS total
-
+        p.learning, p.resume, p.interview, p.roadmap,
+        ROUND((p.learning + p.resume + p.interview + p.roadmap) / 4) AS total
         FROM students s
-        JOIN progress p
-        ON s.email = p.student_email
-
+        JOIN progress p ON s.email = p.student_email
         ORDER BY total DESC
     """)
 
@@ -336,6 +384,7 @@ def leaderboard():
 
 @app.route("/placement-analytics", methods=["GET"])
 def placement_analytics():
+    create_tables()
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -343,23 +392,12 @@ def placement_analytics():
     cursor.execute("""
         SELECT
         COUNT(*) AS total_students,
-
         SUM(
             CASE
-            WHEN (
-            (learning + resume +
-             interview + roadmap)/4
-            ) >= 90
-            THEN 1
-            ELSE 0
-            END
+            WHEN ((learning + resume + interview + roadmap) / 4) >= 90
+            THEN 1 ELSE 0 END
         ) AS placement_ready,
-
-        AVG(
-        (learning + resume +
-         interview + roadmap)/4
-        ) AS average_progress
-
+        AVG((learning + resume + interview + roadmap) / 4) AS average_progress
         FROM progress
     """)
 
@@ -371,122 +409,6 @@ def placement_analytics():
     return jsonify(data)
 
 
-@app.route("/send-otp", methods=["POST"])
-def send_otp():
-
-    data = request.json
-
-    email = data["email"]
-
-    otp = str(random.randint(100000, 999999))
-
-    sender_email = "YOUR_GMAIL@gmail.com"
-
-    app_password = "YOUR_GMAIL_APP_PASSWORD"
-
-    message = MIMEText(
-        f"Your AI Career Platform OTP is: {otp}"
-    )
-
-    message["Subject"] = "AI Career Platform OTP Verification"
-
-    message["From"] = sender_email
-
-    message["To"] = email
-
-    try:
-
-        server = smtplib.SMTP(
-            "smtp.gmail.com",
-            587
-        )
-
-        server.starttls()
-
-        server.login(
-            sender_email,
-            app_password
-        )
-
-        server.sendmail(
-            sender_email,
-            email,
-            message.as_string()
-        )
-
-        server.quit()
-
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        cursor.execute(
-            "DELETE FROM otp_codes WHERE email=%s",
-            (email,)
-        )
-
-        cursor.execute(
-            """
-            INSERT INTO otp_codes
-            (email, otp)
-            VALUES (%s, %s)
-            """,
-            (email, otp)
-        )
-
-        conn.commit()
-
-        cursor.close()
-        conn.close()
-
-        return jsonify({
-            "message":
-            "OTP sent successfully to email"
-        })
-
-    except Exception as e:
-
-        return jsonify({
-            "message": str(e)
-        }), 500
-
-
-@app.route("/verify-otp", methods=["POST"])
-def verify_otp():
-
-    data = request.json
-
-    email = data["email"]
-    otp = data["otp"]
-
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    cursor.execute(
-        """
-        SELECT *
-        FROM otp_codes
-        WHERE email=%s AND otp=%s
-        """,
-        (email, otp)
-    )
-
-    result = cursor.fetchone()
-
-    cursor.close()
-    conn.close()
-
-    if result:
-
-        return jsonify({
-            "message":
-            "OTP verified successfully"
-        })
-
-    return jsonify({
-        "message":
-        "Invalid OTP"
-    }), 400
-
-
 if __name__ == "__main__":
-    app.run(debug=True)
+    create_tables()
+    app.run(host="0.0.0.0", port=5000)
