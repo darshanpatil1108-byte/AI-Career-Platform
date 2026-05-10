@@ -8,7 +8,7 @@ function PlacementAnalytics() {
   });
 
   useEffect(() => {
-    fetch("http://127.0.0.1:5000/placement-analytics")
+    fetch("https://ai-career-platform-murj.onrender.com/placement-analytics")
       .then((res) => res.json())
       .then((result) => {
         setData({

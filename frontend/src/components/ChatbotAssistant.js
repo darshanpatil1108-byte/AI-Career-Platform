@@ -15,7 +15,7 @@ function ChatbotAssistant() {
 
     try {
       const response = await fetch(
-        "http://127.0.0.1:5000/answer",
+        "https://ai-career-platform-murj.onrender.com/answer",
         {
           method: "POST",
 

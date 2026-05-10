@@ -17,7 +17,7 @@ function AdminDashboard() {
 
   const fetchStudents = async () => {
     try {
-      const response = await fetch("http://127.0.0.1:5000/admin/students");
+      const response = await fetch("https://ai-career-platform-murj.onrender.com/admin/students");
       const data = await response.json();
       setStudents(data);
     } catch (error) {
@@ -34,7 +34,7 @@ function AdminDashboard() {
 
   const addCourse = async () => {
     try {
-      const response = await fetch("http://127.0.0.1:5000/admin/add-course", {
+      const response = await fetch("https://ai-career-platform-murj.onrender.com/admin/add-course", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

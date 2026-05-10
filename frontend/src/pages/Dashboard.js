@@ -26,7 +26,7 @@ function Dashboard() {
 
       try {
         const response = await fetch(
-          `http://127.0.0.1:5000/get-progress/${student.email}`
+          `https://ai-career-platform-murj.onrender.com/get-progress/${student.email}`
         );
 
         const progress = await response.json();
