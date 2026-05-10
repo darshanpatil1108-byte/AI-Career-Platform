@@ -1,0 +1,78 @@
+.dashboard {
+  min-height: 100vh;
+  padding: 55px;
+  background:
+    linear-gradient(
+      rgba(2, 6, 23, 0.72),
+      rgba(15, 23, 42, 0.72)
+    ),
+    url("https://images.unsplash.com/photo-1526379095098-d400fd0bf935?auto=format&fit=crop&w=1600&q=80");
+
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+.dash-grid {
+  width: 1150px;
+  margin: 35px auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.dash-card {
+  padding: 28px;
+  border-radius: 28px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35);
+  transition: 0.4s;
+}
+
+.dash-card:hover {
+  transform: translateY(-10px) scale(1.03);
+  box-shadow: 0 25px 40px rgba(0, 0, 0, 0.45);
+}
+
+.dash-card h2 {
+  color: white;
+  margin-bottom: 14px;
+}
+
+.dash-card h3 {
+  font-size: 34px;
+  background: linear-gradient(
+    90deg,
+    #60a5fa,
+    #c084fc,
+    #ec4899
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.progress-bg {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 30px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  padding: 12px;
+  color: white;
+  font-weight: 700;
+  border-radius: 30px;
+  background: linear-gradient(
+    90deg,
+    #2563eb,
+    #06b6d4,
+    #7c3aed,
+    #ec4899
+  );
+  box-shadow: 0 0 18px rgba(96, 165, 250, 0.5);
+}

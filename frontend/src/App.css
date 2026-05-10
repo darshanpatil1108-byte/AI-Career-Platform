@@ -1,0 +1,34 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+body.dark-mode {
+  background: #020617;
+  color: white;
+}
+
+body.dark-mode input,
+body.dark-mode textarea {
+  background: #0f172a;
+  color: white;
+  border: 1px solid #475569;
+}
+
+button {
+  transition: 0.3s;
+}
+
+button:hover {
+  transform: translateY(-3px);
+}
+
+a {
+  transition: 0.3s;
+}
