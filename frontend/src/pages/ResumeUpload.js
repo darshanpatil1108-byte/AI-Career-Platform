@@ -24,7 +24,7 @@ function ResumeUpload() {
     formData.append("resume", file);
 
     try {
-      const response = await fetch("https://ai-career-platform-murj.onrender.com/analyze-resume", {
+      const response = await fetch("http://127.0.0.1:5000/analyze-resume", {
         method: "POST",
         body: formData
       });
@@ -32,7 +32,7 @@ function ResumeUpload() {
       const data = await response.json();
       setResult(data);
 
-      await fetch("https://ai-career-platform-murj.onrender.com/update-progress", {
+      await fetch("http://127.0.0.1:5000/update-progress", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

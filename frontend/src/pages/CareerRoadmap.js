@@ -34,7 +34,7 @@ function CareerRoadmap() {
 
     try {
       const progressResponse = await fetch(
-        `https://ai-career-platform-murj.onrender.com/get-progress/${student.email}`
+        `http://127.0.0.1:5000/get-progress/${student.email}`
       );
 
       const progressData = await progressResponse.json();
@@ -48,7 +48,7 @@ function CareerRoadmap() {
           current = 100;
         }
 
-        await fetch("https://ai-career-platform-murj.onrender.com/update-progress", {
+        await fetch("http://127.0.0.1:5000/update-progress", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"

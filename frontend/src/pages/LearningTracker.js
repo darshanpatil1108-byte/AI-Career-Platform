@@ -329,7 +329,7 @@ function LearningTracker() {
 
     if (student) {
       try {
-        await fetch("https://ai-career-platform-murj.onrender.com/update-progress", {
+        await fetch("http://127.0.0.1:5000/update-progress", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"

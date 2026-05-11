@@ -4,7 +4,7 @@ function Leaderboard() {
   const [students, setStudents] = useState([]);
 
   useEffect(() => {
-    fetch("https://ai-career-platform-murj.onrender.com/leaderboard")
+    fetch("http://127.0.0.1:5000/leaderboard")
       .then((res) => res.json())
       .then((data) => setStudents(data))
       .catch(() => console.log("Backend not connected"));
